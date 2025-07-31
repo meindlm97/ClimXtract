@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1' 
+VERSION = '1.0.0' 
 DESCRIPTION = 'Climxtract'
 LONG_DESCRIPTION = 'ClimXtract: A Python Toolkit for Standardizing High-Resolution Climate Datasets for Austria'
 
