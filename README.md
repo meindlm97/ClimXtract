@@ -92,13 +92,14 @@ To convert Kelvin (K) to degrees Celsius (°C), we use the formula:
 $tas_{\text{°C}} = tas_{\text{K}} - 273.15$
 
 To convert ERA5-Land hourly total precipitation data from meters into the total precipitation for a day (mm):
+
 $pr_{\text{daily}} = pr_{\text{d+1 00UTC}} \times 1000$
 
 where d is the day for which the total precipitation is being computed. This time step should be taken because it contains the accumulated precipitation over the previous 24 hours.
 
 To convert ERA5 reanalysis hourly total precipitation data from meters into total precipitation for a day (mm):
 
-$pr_{\text{daily}} = \left( \sum_{h=1}^{23} \text{pr}_{d,h} + \text{pr}_{d+1,00UTC} \right) \times 1000$
+$pr_{\text{daily}} = (Σ_{h=1}^{23} pr_{d,h} + pr_{d+1,00UTC}) \times 1000$
 
 where h is the hour and d the day of interest (d+1 is the following day). The total precipitation over 24 hours is the sum of the individual total precipiation values for each hour.
 
