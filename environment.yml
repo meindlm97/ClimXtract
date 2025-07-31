@@ -1,0 +1,9 @@
+name: climxtract
+channels:
+    - conda-forge
+dependencies:
+    - cdo==2.5.0
+    - pip
+    - pip:
+        - matplotlib
+        - climxtract
