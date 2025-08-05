@@ -228,7 +228,7 @@ Climate datasets from difference sources typically come on different horizontal 
 
 The interpolation methods are implemented using the **CDO command-line interface** wrapped in Python. Note that this wrapper does not include the `CDO` binary itself, which must be installed separately and made available in the system environment (i.e., accessible via the system PATH). In our setup, `CDO` version 2.5.0 was installed within a conda environment. However, the wrapper is compatible with any exisitng `CDO` installation. Users specify source and target grids and can switch between interpolation methods by means of the keywords `depending on the variable and use case.
 
-There is not a rule set in stone as to which interpolation method should be used, therefore study your data and goals beforehand. One general advise is to always be careful when applying interpolation/regridding methods, especially for not continous fields like precipitation! 
+There is no one-size-fits-all interpolation method. The best approach depends on your specific dataset and objectives. Always carefully consider the characteristics of your variable, especially for discontinuous fields like precipitation. In the following, we briefly outline the properties and advantages of the interpolation methods provided:
 
 **Nearest neighbour regridding:** 
 - takes the value of the nearest grid cell of the source grid and writes it into the target grid cell
@@ -236,7 +236,7 @@ There is not a rule set in stone as to which interpolation method should be used
 - simple method that works most of the time, even when other methods do not
 
 **Distance weighted regridding:**
-- inverse distance weighted average remapping of the four (default number, can be changed) nearest neighbor values
+- inverse distance weighted average remapping of the four (default number, can be changed) nearest neighbour values
 - smoother grid, gradients less steep than with nearest neighbour
 - no need to provide source grid cell corner coordinates
 
@@ -252,7 +252,7 @@ There is not a rule set in stone as to which interpolation method should be used
 
 ## Process to apply a spatial domain mask (Masking)
 
-After regridding, ClimXtract offers a masking functionality to apply a spatial domain mask from any target dataset. This ensures spatial consistency accross datasets, removes unwanted edge regions, and aligns the data with the target analysis domain (e.g., Austria). In our [example notebooks](https://gitlab.phaidra.org/climate/highreslearn/-/tree/meindlm97-climxtract/example_notebooks), masking is again based on the ÖKS15 grid, which defines the Austrian domain by means of NaN values outside of Austria. The masking step is implemented using `xarray.where`, making it efficient and compatible with NetCDF workflows.
+After regridding, ClimXtract offers a masking functionality to apply a spatial domain mask from any target dataset. This ensures spatial consistency accross datasets, removes unwanted edge regions, and aligns the data with the target analysis domain (e.g., Austria). In our [example notebooks](https://github.com/meindlm97/ClimXtract/tree/main/example_notebooks), masking is again based on the ÖKS15 grid, which defines the Austrian domain by means of NaN values outside of Austria. The masking step is implemented using `xarray.where`, making it efficient and compatible with NetCDF workflows.
 
 ## Authors
 Climxtract has been developed by:
