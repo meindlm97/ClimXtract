@@ -1,4 +1,4 @@
-# ClimXtract: A Python Toolkit for Standardizing High-Resolution Climate Datasets for Austria
+# ClimXtract: A Python Toolkit for Standardizing High-Resolution Climate Datasets on Regional Domains
 
 ClimXtract provides a modular pipeline for preparing high-resolution climate datasets for regional analysis. Its three capabilities are **downloading**, **regridding**, and **masking**, all designed to support interoperability and reproducability. Although the toolkit is designed with Austria and ÖKS15 in mind, all components can be configured to work with any user-defined target grid.
 
