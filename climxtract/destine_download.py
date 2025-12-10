@@ -1,4 +1,4 @@
-# destine_download.py
+## destine_download.py
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -12,6 +12,7 @@ import glob
 import shutil
 from cdo import Cdo
 from importlib.resources import files
+from .dictionary import dictionary
 
 
 def load_destine(model_global, variable, experiment, start, end,
@@ -32,38 +33,43 @@ def load_destine(model_global, variable, experiment, start, end,
             Returns the path of the netCDF file containing the DestinE
             daily mean data calculated from downloaded hourly data.
     """
+    # Validate variable
+    if variable not in dictionary:
+        raise ValueError(f"Variable must be one of {list(dictionary.keys())}")
+
+    destine_info = dictionary[variable]['destine']
+    variable_long = destine_info['name']
+    standard_key = next(iter(dictionary[variable]))
+    standard_unit = dictionary[variable][standard_key]['units']
+
     # Define filename
     file = f"{variable}_{model_global}_{start}-{end}.nc"
     output_file = os.path.join(output_path, file)
 
     # Check whether the file already exists and return the path of the file
     if os.path.exists(output_file):
-        print("Loaded data successfully.")
+        print("Loaded DestinE Climate DT data successfully.")
         return output_file
 
     else:
-        # Define temporary directory
-        output_path_temp = os.path.join(output_path, "tmp")
-
-        # Ensure the temporary directory exists
-        os.makedirs(output_path_temp, exist_ok=True)
-
-        # Define filename for temporal output
-        temp_file = os.path.join(output_path_temp, file)
+        # Create temporary directory
+        temp_dir = os.path.join(output_path, "tmp")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_file = os.path.join(temp_dir, file)
 
         # Define range of dates to be downloaded
         dates = xr.cftime_range(
             start=start,
             end=end,
             freq='1D',
-            inclusive='both', 
+            inclusive='both',
             calendar='proleptic_gregorian'
         )
 
         for date in dates:
             date = date.strftime('%Y%m%d')
 
-            fn = os.path.join(output_path_temp, f'{model_global}-climate-dt_{variable}_high_hourly_{date}.grib')
+            fn = os.path.join(temp_dir, f'{model_global}-climate-dt_{variable}_high_hourly_{date}.grib')
             if os.path.isfile(fn):
                 continue
 
@@ -83,14 +89,6 @@ def load_destine(model_global, variable, experiment, start, end,
             if experiment == 'hist':
                 activity = 'CMIP6'
 
-            # Check variable consistency for temperature
-            if variable == 'tas':
-                variable_request = '167'
-
-            # Check variable consistency for precipitation
-            if variable == 'pr':
-                variable_request = '260048'
-
             request = {
                 "activity": activity,
                 "class": "d1",
@@ -101,7 +99,7 @@ def load_destine(model_global, variable, experiment, start, end,
                 "generation": "1",
                 "levtype": "sfc",
                 "model": model_global,
-                "param": variable_request,
+                "param": variable_long,
                 "realization": "1",
                 "resolution": "high",
                 "stream": "clte",
@@ -112,8 +110,8 @@ def load_destine(model_global, variable, experiment, start, end,
             try:
                 retrieve = client.retrieve(
                     "destination-earth",
-                    request, 
-                    output_file=fn, 
+                    request,
+                    output_file=fn,
                     pointer=False)
                 print(f'{date=}...DONE')
 
@@ -122,12 +120,13 @@ def load_destine(model_global, variable, experiment, start, end,
                 continue
 
         # Glob all GRIB files in the directory
-        grib_files = sorted(glob.glob(os.path.join(output_path_temp, "*.grib")))
+        grib_files = sorted(glob.glob(os.path.join(temp_dir, "*.grib")))
 
         for grib_file in grib_files:
             # Open the GRIB file
             dataset = xr.open_dataset(grib_file, engine="cfgrib")
 
+            # Standardize variable and units for temperature
             if variable == 'tas':
                 # Rename the variable
                 dataset = dataset.rename({'t2m': variable})
@@ -140,10 +139,15 @@ def load_destine(model_global, variable, experiment, start, end,
 
                 # Convert from Kelvin to Celsius
                 daily_mean[variable] = daily_mean[variable] - 273.15
+                units = daily_mean[variable].attrs.get("units", None)
+                if units is None or units not in standard_unit:
+                    print(f"Warning: {variable} has no or wrong unit attribute.")
+                    daily_mean[variable].attrs['units'] = standard_unit
+                    print(f"Note: Unit attribute of {variable} changed to {standard_unit}.")
 
                 # Generate an output file name
                 base_name = os.path.basename(grib_file).replace(".grib", "_daily_mean.nc")
-                daily_file = os.path.join(output_path_temp, base_name)
+                daily_file = os.path.join(temp_dir, base_name)
 
                 # Save the daily mean to a NetCDF file
                 daily_mean.to_netcdf(daily_file)
@@ -163,13 +167,13 @@ def load_destine(model_global, variable, experiment, start, end,
 
                 # Generate an output file name
                 base_name = os.path.basename(grib_file).replace(".grib", "_daily_mean.nc")
-                daily_file = os.path.join(output_path_temp, base_name)
+                daily_file = os.path.join(temp_dir, base_name)
 
                 # Save the daily mean to a NetCDF file
                 daily_mean.to_netcdf(daily_file)
 
         # Use CDO to merge netcdf files
-        daily_files = sorted(glob.glob(os.path.join(output_path_temp, "*_daily_mean.nc")))
+        daily_files = sorted(glob.glob(os.path.join(temp_dir, "*_daily_mean.nc")))
 
         if daily_files:
             # Convert the list of files into a space-separated string
@@ -191,7 +195,7 @@ def load_destine(model_global, variable, experiment, start, end,
             # Set grid from unstructured (default Destination Earth) to healpix for conservative regridding
             cdo.setgrid(str(healpix_grid_path), input=temp_file, output=output_file)
 
-        # Path to the directory you want to remove
-        shutil.rmtree(output_path_temp)
+        # Clean temporary directory
+        shutil.rmtree(temp_dir)
 
         return output_file
