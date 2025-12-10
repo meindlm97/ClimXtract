@@ -8,81 +8,88 @@
 import os
 import wget
 import shutil
-from cdo import Cdo
+import xarray as xr
+from .dictionary import dictionary
 
 
 def load_eobs(variable, start, end, output_path):
     """
     Download daily E-OBS data from European Climate Assessment & Dataset.
-    The complete dataset from 1950 onwards is downloaded and saved.
+    The complete dataset from 1950 onwards is downloaded.
 
         Input:
             variable       str          variable name (e.g. 2m_temperature)
-            start          str          start year (1950)
-            end            str          end year (2024)
+            start          str          start date (20200101)
+            end            str          end date (20201231)
             output_path    str          path where netCDF file is stored
 
         Output:
-            Returns the path of the netCDF file containing the ERA5 daily mean data.
+            Returns the path of the netCDF file containing the daily E-OBS data.
     """
-    # Define filename
-    file = f"{variable}_e-obs30.e_{start}-{end}.nc"
+    # Validate variable
+    if variable not in dictionary:
+        raise ValueError(f"Variable must be one of {list(dictionary.keys())}")
+
+    eobs_info = dictionary[variable]['eobs']
+    variable_long = eobs_info['name']
+    standard_key = next(iter(dictionary[variable]))
+    standard_unit = dictionary[variable][standard_key]['units']
+
+    # Define output filename
+    file = f"{variable}_e-obs31.e_{start}-{end}.nc"
     output_file = os.path.join(output_path, file)
 
     # Check whether the file already exists and return the path of the file
     if os.path.exists(output_file):
-        print("Loaded data successfully.")
+        print("Loaded E-OBS data successfully.")
         return output_file
 
     else:
-        # Check variable consistency for temperature
-        if variable == 'tas':
-            variable_long = 'tg'
+        # Create temporary directory
+        temp_dir = os.path.join(output_path, "tmp")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_file = os.path.join(temp_dir, file)
 
-        # Check variable consistency for precipitation
-        if variable == 'pr':
-            variable_long = 'rr'
-
-        # Define temporary directory
-        output_path_temp = os.path.join(output_path, "tmp")
-
-        # Ensure the temporary directory exists
-        os.makedirs(output_path_temp, exist_ok=True)
-
-        # Define filename for temporal output
-        temp_file = os.path.join(output_path_temp, file)
-
+        # Download E-OBS data
         try:
-            # Putting together the download link (url)
             base_url = "https://knmi-ecad-assets-prd.s3.amazonaws.com/ensembles/data/"
             url_directory = base_url + "Grid_0.1deg_reg_ensemble/"
             filename = str(variable_long) + "_" + "ens_mean_0.1deg_reg_v30.0e.nc"
             url = url_directory + filename
-
-            # Download the file using the wget package
             wget.download(url, out=temp_file)
-            print("Downloaded data successfully.")
-
+            print("Downloaded E-OBS data successfully.")
         except Exception as e:
-            print("Failed to download data.")
-            print(f"\nAn error occured: {e}")
+            print(f"Failed to download E-OBS data.\nError: {e}")
+            return None
 
-        # If cdo is not in the path, add it manually
-        conda_bin = os.path.expanduser('~/.conda/envs/climxtract/bin')
-        os.environ['PATH'] += f':{conda_bin}'
+        # Open previously downloaded dataset
+        dataset = xr.open_dataset(temp_file)
 
-        # Initialize the Cdo object
-        cdo = Cdo()
+        # Select the data range
+        dataset = dataset.sel(time=slice(start, end))
 
+        # Standardize variable and units for temperature
         if variable == 'tas':
-            # Rename the variable
-            cdo.chname("tg", "tas", input=temp_file, output=output_file)
+            dataset = dataset.rename({variable_long: variable})
+            units = dataset[variable].attrs.get("units", None)
+            if units is None or units not in standard_unit:
+                print(f"Warning: {variable} has no or wrong unit attribute.")
+                dataset[variable].attrs['units'] = standard_unit
+                print(f"Note: Unit attribute of {variable} changed to {standard_unit}.")
 
+        # Standardize variable and units for precipitation
         if variable == 'pr':
-            # Rename the variable
-            cdo.chname("rr", "pr", input=temp_file, output=output_file)
+            dataset = dataset.rename({variable_long: variable})
+            units = dataset[variable].attrs.get("units", None)
+            if units is None or units not in standard_unit:
+                print(f"Warning: {variable} has no or wrong unit attribute.")
+                dataset[variable].attrs['units'] = standard_unit
+                print(f"Note: Unit attribute of {variable} changed to {standard_unit}.")
 
-        # Path to the directory you want to remove
-        shutil.rmtree(output_path_temp)
+        # Write dataset to netCDF file
+        dataset.to_netcdf(output_file)
+
+        # Clean temporary directory
+        shutil.rmtree(temp_dir)
 
         return output_file
