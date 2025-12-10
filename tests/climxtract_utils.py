@@ -9,6 +9,7 @@ import os
 import xarray as xr
 import numpy as np
 import climxtract as cxt
+import matplotlib.pyplot as plt
 
 
 def load_datasets(path, extension=".nc", max_files=6):
@@ -31,7 +32,7 @@ def load_datasets(path, extension=".nc", max_files=6):
             if fname.endswith(extension):
                 files.append(os.path.join(root, fname))
 
-    files = sorted(files, key=lambda f: os.path.getmtime(f))
+    files = sorted(files, key=lambda f: int(os.path.basename(f).split("_")[0]))
     datasets = [(f, xr.open_dataset(f)) for f in files]
     return datasets
 
@@ -166,12 +167,54 @@ def compare_to_reference(spatial_means, reference_da, tol=1e-6):
     # Compare
     comparison = np.allclose(combined.values, reference_da.values, atol=tol)
     if comparison:
-        print("All datasets match the reference. ✅")
+        print("All datasets match the reference!")
     else:
-        print("Some datasets deviate from reference! ⚠️")
+        print("Some datasets deviate from reference!")
         # Optionally, report which dataset(s) differ
         for i in range(len(spatial_means)):
             if not np.allclose(combined.isel(dataset=i).values,
                                reference_da.isel(dataset=i).values, atol=tol):
                 print(f"- Dataset {i} differs from reference")
     return comparison
+
+def plot_spatial_means(spatial_means, labels, outfile):
+    """
+    Plot spatial mean time series for all datasets and save as PNG.
+
+    Args:
+        spatial_means (list[xarray.DataArray]): List of daily spatial mean values.
+        labels (list[str]): Legend labels for each dataset.
+        outfile (str): Output PNG path (e.g. "/path/to/tests/spatial_means.png").
+    """
+
+    # Create x-axis: days of September
+    days_of_september = np.arange(1, len(spatial_means[0]) + 1)
+
+    # Predefined colors and styles (paired logically)
+    colors = ["black", "black", "blue", "blue", "orange", "orange"]
+    linestyles = ["-", "--", "-", "--", "-", "--"]
+
+    plt.figure(figsize=(16, 6))
+
+    for i, da in enumerate(spatial_means):
+        plt.plot(
+            days_of_september,
+            da.values,
+            label=labels[i],
+            color=colors[i % len(colors)],
+            linestyle=linestyles[i % len(linestyles)],
+        )
+
+    plt.xticks(size=12)
+    plt.yticks(size=12)
+    plt.xlabel("Day of September 2020", size=14)
+    plt.ylabel("Near-surface air temperature [°C]", size=14)
+
+    plt.legend(
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.18),
+        ncol=3,
+        fontsize=10
+    )
+
+    plt.savefig(outfile, bbox_inches="tight")
