@@ -12,6 +12,7 @@ from .cordex_download import load_cordex
 from .eobs_download import load_eobs
 from .destine_download import load_destine
 from .era5_download import load_era5
+from .ch2025_download import load_ch2025
 from .regrid import remapbil
 from .regrid import remapnn
 from .regrid import remapcon
@@ -71,6 +72,14 @@ def load(type, model_global, model_regional, variable, experiment, ens, start, e
         # Use xarray to load the dataset from the downloaded netCDF file
         dataset_era5 = xr.open_dataset(file_path_era5)
         return file_path_era5, dataset_era5
+
+    if type == 'ch2025':
+        # Call the load_ch2025 function to get the file path
+        file_path_ch2025 = load_ch2025(model_global, model_regional, variable, experiment, output_path)
+
+        # Use xarray to load the dataset from the downloaded netCDF file
+        dataset_ch2025 = xr.open_dataset(file_path_ch2025)
+        return file_path_ch2025, dataset_ch2025
 
     else:
         raise ValueError(f"Unsupported type: {type}")
