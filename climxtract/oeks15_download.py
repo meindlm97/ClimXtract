@@ -7,14 +7,15 @@
 
 import wget
 import os
+from .dictionary import dictionary
 
 
 def load_oeks15(model_global, model_regional, variable,
                 experiment, ens, output_path):
     """
-    Download OeKS15 data from the Geosphere Austria Datahub and save as netCDF
-    file in the corresponding output path.
-    The complete dataset from 1951-2100 is downloaded and saved.
+    Download ÖKS15 data from the Geosphere Austria Datahub and save as netCDF
+    file in the corresponding output path. The complete dataset from 1951-2100
+    is downloaded.
 
         Input:
             model_global         string      name of the global climate model
@@ -25,8 +26,17 @@ def load_oeks15(model_global, model_regional, variable,
             output_path          string      path where netCDF file is stored
 
         Output:
-            Returns the path of the netCDF file containing the OeKS15 data.
+            Returns the path of the netCDF file containing the ÖKS15 data.
     """
+    # Validate variable
+    if variable not in dictionary:
+        raise ValueError(f"Variable must be one of {list(dictionary.keys())}")
+
+    oeks15_info = dictionary[variable]['oeks15']
+    variable_long = oeks15_info['name']
+    #standard_key = next(iter(dictionary[variable]))
+    #standard_unit = dictionary[variable][standard_key]['units']
+
     # Define filename
     file = (
         f"{variable}_SDM_{model_global}_{experiment}_"
@@ -37,27 +47,21 @@ def load_oeks15(model_global, model_regional, variable,
 
     # Check whether the file already exists and return the path of the file
     if os.path.exists(output_file):
-        print("Loaded data successfully.")
+        print("Loaded ÖKS15 data successfully.")
         return output_file
 
     else:
-        # Check variable consistency for temperature
-        if variable == 'tas':
-            variable_long = 'temperature'
+        # Check version for temperature and maximum temperature
+        if variable == 'tas' or variable == 'tx':
             version = '-v02/'
 
-        # Check variable consistency for precipitation
+        # Check version for precipitation
         if variable == 'pr':
-            variable_long = 'precipitation'
             version = '-v01/'
 
-        # Check variable consistency for maximum temperature
-        if variable == 'tx':
-            variable_long = 'temperature'
-            version = '-v02/'
-
+        # Download ÖKS15 data
         try:
-            # Putting together the download link (url)
+            # Put together the download link (url)
             base_url = (
                 "https://public.hub.geosphere.at/public/resources/oks15/"
                 "bias_corrected/oks15_bias_corrected_"
@@ -72,12 +76,12 @@ def load_oeks15(model_global, model_regional, variable,
             # Construct the full URL
             url = f"{url_directory}{file}"
 
-            # Download the file using the wget package
+            # Download the file using wget
             output_file = wget.download(url, out=output_file)
-            print("Downloaded and data successfully.")
+            print("Downloaded ÖKS15 data successfully.")
 
         except Exception as e:
-            print("Failed to download data.")
-            print(f"\nAn error occured: {e}")
+            print(f"Failed to download ÖKS15 data.\nError: {e}")
+            return None
 
         return output_file
