@@ -11,12 +11,13 @@ import wget
 import xarray as xr
 from cdo import Cdo
 from importlib.resources import files
+from .dictionary import dictionary
 
 
 def download_yearly_files(dataset, year, output_path):
     """
-    Download SPARTACUS v2.1 data on a yearly basis from the
-    Geosphere Austria Datahub.
+    Download daily SPARTACUS v2.1 data on a yearly basis
+    from the Geosphere Austria Datahub.
 
         Input:
             dataset    str      type of the dataset (e.g tn)
@@ -39,13 +40,13 @@ def download_yearly_files(dataset, year, output_path):
     url = f"{url_directory}{file}"
 
     # Define temporary directory
-    output_path_temp = os.path.join(output_path, "tmp")
+    temp_dir = os.path.join(output_path, "tmp")
 
     # Ensure the temporary directory exsists
-    os.makedirs(output_path_temp, exist_ok=True)
+    os.makedirs(temp_dir, exist_ok=True)
 
     # Define filname for temporal output
-    temp_file = os.path.join(output_path_temp, file)
+    temp_file = os.path.join(temp_dir, file)
 
     # Download the file using the wget package
     wget.download(url, out=temp_file)
@@ -55,7 +56,7 @@ def download_yearly_files(dataset, year, output_path):
 
 def load_spartacus(variable, start, end, output_path):
     """
-    Function that calls download_netcdf_files to download SPARTACUS data.
+    Function that calls download_yearly_files to download SPARTACUS data.
     The individual downloaded years are merged into one file.
     The temperature is calculated as the mean of daily maximum and
     minimum temperature.
@@ -69,6 +70,15 @@ def load_spartacus(variable, start, end, output_path):
         Output:
             Returns the path of the netCDF file containing the SPARTACUS data.
     """
+    # Validate variable
+    if variable not in dictionary:
+        raise ValueError(f"Variable must be one of {list(dictionary.keys())}")
+
+    spartacus_info = dictionary[variable]['spartacus']
+    variable_long = spartacus_info['name']
+    standard_key = next(iter(dictionary[variable]))
+    standard_unit = dictionary[variable][standard_key]['units']
+
     # Define filename
     tmp_file = (
         f"{variable}_spartacusv2.1_"
@@ -85,7 +95,7 @@ def load_spartacus(variable, start, end, output_path):
 
     # Check whether the file already exists and return the path of the file
     if os.path.exists(output_file):
-        print("Loaded data successfully.")
+        print("Loaded SPARTACUS data successfully.")
         return output_file
 
     else:
@@ -119,12 +129,25 @@ def load_spartacus(variable, start, end, output_path):
                     data_list.append(rr['RR'])
 
             # Concatenate all years together along the time dimension
-            combined_data = xr.concat(data_list, dim='time')
-            combined_data.name = variable
+            dataset = xr.concat(data_list, dim='time')
 
-            # Save the resulting dataset to a single NetCDF file
-            combined_data.to_netcdf(tmp_file)
-            print("Downloaded and processed data successfully.")
+            # Standardize variable and units for temperature
+            if variable == 'tas':
+                dataset.name = variable
+                units = dataset.attrs.get("units", None)
+                if units is None or units not in standard_unit:
+                    dataset.attrs['units'] = standard_unit
+
+            # Standardize varibale and units for precipitation
+            if variable == 'pr':
+                dataset.allname = variable
+                units = dataset.attrs.get("units", None)
+                if units is None or units not in standard_unit:
+                    dataset.attrs['units'] = standard_unit
+
+            # Save dataset to netCDF file
+            dataset.to_netcdf(tmp_file)
+            print("Downloaded SPARTACUS data successfully.")
 
             # If cdo is not in the path, add it manually
             conda_bin = os.path.expanduser('~/.conda/envs/climxtract/bin')
@@ -136,17 +159,17 @@ def load_spartacus(variable, start, end, output_path):
             # Dynamically get the file path to spartacus_grid.txt inside the package
             spartacus_grid_path = files('climxtract').joinpath('spartacus_grid.txt')
 
-            # Set grid from unstructured (default Destination Earth) to healpix for conservative regridding
+            # Set spartacus grid for conservative regridding
             cdo.setgrid(str(spartacus_grid_path), input=tmp_file, output=output_file)
 
         except Exception as e:
-            print("Failed to download and process data.")
-            print(f"\nAn error occured: {e}")
+            print(f"Failed to download SPARTACUS data.\nError: {e}")
+            return None
 
-        # Path to the directory you want to remove
+        # Clean temporary directory
         shutil.rmtree(os.path.join(output_path, "tmp"))
 
-        # remove tmp_file with old grid
+        # Remove tmp_file with old grid
         os.remove(tmp_file)
 
         return output_file
