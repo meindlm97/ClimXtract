@@ -8,10 +8,13 @@ ClimXtract was developed as part of the Austrian Climate Research Programme (ACR
 
 The repository is organized as follows:
 
-- **climxtract** contains the actual source code. ```__init__.py``` is acting as the control center. The individual download functions can be called here, whereby each function returns a tuple containing both the path of the downloaded file (as string) and an xarray object. The regridding function (```regrid.py```) requires the path of the target-grid, as well as the path of the input file to be regridded. The masking function (```mask.py```) requires again the path of the target-grid and the path of the previously regridded file. Note that all functions can also be used independently of each other. 
-- **example_notebooks** contains example notebooks that illustrate the use of climxtract (for processing temperature and preciptation data). These notebooks can be adapted by the needs of the user, but provide the general procedure for regridding und masking the data as well as some plotting routines to make a first visual comparison between the different datasets. 
+- **climxtract** contains the actual source code. ```__init__.py``` is acting as the control center. The individual download functions can be called here, whereby each function returns a tuple containing both the path of the downloaded file (as string) and an xarray object. The regridding function (```regrid.py```) requires the path of the target-grid, as well as the path of the input file to be regridded. The masking function (```mask.py```) requires again the path of the target-grid and the path of the previously regridded file. Note that all functions can also be used independently of each other.
+- **example_data**: Sample datasets for testing.
+- **example_data_processed**: Output data generated from [test script](https://github.com/meindlm97/ClimXtract/blob/main/tests/test.py).
+- **example_notebooks** contains example notebooks that illustrate the use of climxtract (for processing temperature and preciptation data). These notebooks can be adapted by the needs of the user, but provide the general procedure for regridding und masking the data as well as some plotting routines to make a first visual comparison between the different datasets.
+- **tests**: Include reference test to validate functionality of the code.
 
-**Note:** Depending on the timeperiod and therefore the size of the data to be processed, the use of the package within a Jupyter notebook for processing large amounts of data is not recommended.
+**⚠️Note:** Depending on the timeperiod and therefore the size of the data to be processed, the use of the package within a Jupyter notebook for processing large amounts of data is not recommended.
 
 ## Availability and installation
 
@@ -21,7 +24,7 @@ It can be installed via pip:
 
 ```pip install climxtract```
 
-To run the code and also the notebooks you can use the environment.yml file provided to create a conda environment that can run the code. The following commands create the environment and also create an ipykernel called climxtract that can be used in notebooks if selected.
+To run the code and also the example books you can use the environment.yml file provided to create a conda environment that can run the code. The following commands create the environment and also create an ipykernel called climxtract that can be used in Jupyter notebooks if selected.
 
 ```
 # create conda environment named 'climxtract'
@@ -35,6 +38,36 @@ conda activate climxtract
 
 # set climxtract environment to the default used by ipykernels
 python3 -m ipykernel install --user --name=climxtract
+```
+
+## Running a test using sample data
+
+Below we provide step-by-step instruction on how to install the software in order to run a test using the provided sample data.
+
+1. Clone or download the repository
+```
+git clone https://github.com/meindlm97/ClimXtract.git
+cd ClimXtract
+```
+
+2. Set up Python environment
+```
+conda create -n climxtract -c conda-forge -y python=3.10
+conda env update -n climxtract -f environment.yml
+conda activate climxtract
+```
+
+3. Verify the installation: Inside the environment run python and import the package
+```
+python
+import climxtract
+exit()
+```
+
+4. Run a test with sample data: The repository contains example data and scripts in the [test folder](https://github.com/meindlm97/ClimXtract/tree/main/tests). To run the reference test:
+```
+cd tests
+python reference.py
 ```
 
 ## Introduction
@@ -59,67 +92,14 @@ ClimXtract includes dedicated download functions to access and retrieve data fro
 | EURO-CORDEX        | Model           | 12.5 km      | daily         | Europe        |
 | E-OBS              | Observational   | 11 km        | daily         | Europe        |
 | DestinE Climate DT | Model           | 5 km         | hourly        | Global        |
-| ERA5               | Reanalysis      | 30 km        | hourly        | Global        |
-| ERA5-Land          | Reanalysis      | 9 km         | hourly        | Global (Land) |
+| ERA5               | Reanalysis      | 30 km        | hourly/daily  | Global        |
+| ERA5-Land          | Reanalysis      | 9 km         | hourly/daily  | Global (Land) |
 
 *Table 1: Selection of datasets to be used in this data recipes, inlcuding the axpproximate resolution and covered domain.*
 
-## Variables and naming convention
-
-In particular, for the purpose of the project, we are interested in temperature and precipitation, whereby other atmospheric variables can also be considered depending on the needs of the community. The datasets used have different naming conventions for the variables mentioned before. These deviating variable names and their units are addressed and resolved in the recipes provided by a standardized adaption to the ÖKS15 format:
-
-| Variable      | ÖKS15        | SPARTACUS                             |
-|---------------|--------------|---------------------------------------|
-| Temperature   | tas [°C]     | (TN+TX)/2 [°C]                        |      
-| Precipitation | pr  [kg m-2] | daily precipitation sum (RR) [kg m-2] |  
-
-| Variable      | EURO-CORDEX                           | E-OBS                              |
-|---------------|---------------------------------------|------------------------------------|
-| Temperature   | 2m_air_temperature (tas) [K]          | daily mean temperature (tg) [°C]   |
-| Precipitation | precipitation flux (pr) [kg m-2 s-1]  | daily precipitation sum (rr) [mm]  |
-
-| Variable      | DestinE Climate DT                             | ERA5-(Land)                    |
-|---------------|----------------------------------------------- |--------------------------------|
-| Temperature   | 2 metre temperature (t2m) [K]                  | 2m_temperature (t2m) [K]       |
-| Precipitation | Total precipitation rate (tprate) [kg m-2 s-1] | total precipitation (tp) [m/h] |
-
-*Table 2: Variable names and units of the used datasets.*
-
-Note: Hourly data is generally available for ERA5(-Land) and DestinE Climate DT data.
-
-To convert Kelvin (K) to degrees Celsius (°C), we use the formula:
-
-$tas_{\text{°C}} = tas_{\text{K}} - 273.15$
-
-To convert ERA5-Land hourly total precipitation data from meters into the total precipitation for a day (mm):
-
-$pr_{\text{daily}} = pr_{\text{d+1 00UTC}} \times 1000$
-
-where d is the day for which the total precipitation is being computed. This time step should be taken because it contains the accumulated precipitation over the previous 24 hours.
-
-To convert ERA5 reanalysis hourly total precipitation data from meters into total precipitation for a day (mm):
-
-$pr_{\text{daily}} = (Σ_{h=1}^{23} pr_{d,h} + pr_{d+1,00UTC}) \times 1000$
-
-where h is the hour and d the day of interest (d+1 is the following day). The total precipitation over 24 hours is the sum of the individual total precipiation values for each hour.
-
-More information on the [conversion for accumulated variables](https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790).
-
-To convert a precipiation flux respectively a precipitation rate into daily precipitation, we are following these steps:
-
-**1. Unterstand the units:**
-- Precipitation flux is given in kg per square meter per second [kg m-2 s-1].
-- Daily precipitation is required in kg per square meter per day [kg m-2 d-1].
-- Since 1 mm precipitation = 1 kg m-2, daily precipitation in kg m-2 is numerically the same as daily precipitation in mm. 
-
-**2. Convert seconds to a day:** There are 86.400 seconds in a day (24 hours x 60 minutes x 60 seconds).
-
-**3. Perform the conversion:**
-$pr_{\text{daily}} = pr_{\text{flux}} \times 86400$
-
 ## Accessing datasets and variables
 
-Note that DestinE Climate DT and ERA5(-Land) data are available after registration via the respective platforms, while all other datasets are freely accessible. 
+**⚠️Note**: DestinE Climate DT and ERA5(-Land) data are only available after registration via the respective platforms, while all other datasets are freely accessible. 
 
 ### ÖKS15
 
@@ -184,7 +164,7 @@ To access and download the E-OBS dataset, visit the official [data access page](
 
 Destination Earth is a flagship initiative of the European Commission to develop a highly-accurate digital model of the Earth (a digital twin of the Earth) to model, monitor and simulate natural phenomena, hazards and the related human activities. This initiative presents the first ever attempt to operationalise the production of global multi-decadal climate projections at km-scale resolutions of 5 to 10km. To access the datasets from the [Earth Data Hub](https://earthdatahub.destine.eu/) you need to register on the [Destination Earth Platform](https://platform.destine.eu/). In order to get full access to the data, one has to [upgrade the access](https://platform.destine.eu/access-policy-upgrade/) by selecting the appropriate user category (e.g Academia & research). Your request will reviewed and you will be notified on the acceptance.
 
-Note: 
+**⚠️Note**: 
 - Data is provided on a hierachical [HEALPix](https://healpix.sourceforge.io/) grid for both models (ICON & IFS-FESOM/IFS-NEMO). 
 - Data is provided on various levtype values, for different parameters: 2 metre temperature has the parameter 167, Total precipitation rate has the parameter 260048.
 
@@ -216,6 +196,64 @@ In oder to use the CDS API, the CDS API personal access token has to be setup:
 1. If you do not have an account yet, please [register](https://accounts.ecmwf.int/auth/realms/ecmwf/login-actions/registration?execution=c4f93b9c-f4e7-40e7-a6d4-94fb59e7a5e6&client_id=cds&tab_id=KEZjPuIIXiQ).
 2. If you are not logged in, please [login](https://accounts.ecmwf.int/auth/realms/ecmwf/protocol/openid-connect/auth?client_id=cds&scope=openid%20email&response_type=code&redirect_uri=https%3A%2F%2Fcds.climate.copernicus.eu%2Fapi%2Fauth%2Fcallback%2Fkeycloak&state=HLLwusl7uPsbQsnaNS-Io99y_x6i7UXOJKreQvpjbAA&code_challenge=HHjm_PSoGrq-0l8Fpyi9gSYIC9WHRe1AQL2q59Wpbx0&code_challenge_method=S256).
 3. Once logged in, copy the url and the key displayed to the file `$HOME/.cdsapirc`
+
+## Variables and naming convention
+
+In particular, for the purpose of the project, we are interested in temperature and precipitation, whereby other atmospheric variables can also be considered depending on the needs of the community. The datasets used have different naming conventions for the variables mentioned before. These deviating variable names and their units are addressed and resolved in the recipes provided by a standardized adaption to the ÖKS15 format:
+
+| Variable      | ÖKS15        | SPARTACUS                             |
+|---------------|--------------|---------------------------------------|
+| Temperature   | tas [°C]     | (TN+TX)/2 [°C]                        |      
+| Precipitation | pr  [kg m-2] | daily precipitation sum (RR) [kg m-2] |  
+
+| Variable      | EURO-CORDEX                           | E-OBS                              |
+|---------------|---------------------------------------|------------------------------------|
+| Temperature   | 2m_air_temperature (tas) [K]          | daily mean temperature (tg) [°C]   |
+| Precipitation | precipitation flux (pr) [kg m-2 s-1]  | daily precipitation sum (rr) [mm]  |
+
+| Variable      | DestinE Climate DT                             | ERA5-(Land)                    |
+|---------------|----------------------------------------------- |--------------------------------|
+| Temperature   | 2 metre temperature (t2m) [K]                  | 2m_temperature (t2m) [K]       |
+| Precipitation | Total precipitation rate (tprate) [kg m-2 s-1] | total precipitation (tp) [m/h] |
+
+*Table 2: Variable names and units of the used datasets.*
+
+**⚠️Note**: Hourly data is generally available for ERA5(-Land) and DestinE Climate DT data.
+
+Generally, to convert temperature data from Kelvin (K) to degrees Celsius (°C), we use the formula:
+
+$tas_{\text{[°C]}} = tas_{\text{K}} - 273.15$
+
+To convert [hourly ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview) total precipitation data from meters (m) into daily total precipitation in millimeters (mm):
+
+$pr_{\text{d[mm]}} = (Σ_{h=1}^{23} pr_{d,h[m]} + pr_{d+1,00UTC[m]}) \times 1000$
+
+where h is the hour and d the day of interest (d+1 is the following day). The total precipitation over 24 hours is the sum of the individual total precipiation values for each hour.
+
+To convert [daily ERA5](https://cds.climate.copernicus.eu/datasets/derived-era5-single-levels-daily-statistics?tab=overview) total precipitation data from meters (m) into daily total precipitation in millimeters (mm):
+
+$pr_{\text{d[mm]}} =  pr_{d[m]} \times 1000$
+
+To convert [hourly ERA5-Land](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=overview) total precipitation data from meters (m) into daily total precipitation in millimeters (mm):
+
+$pr_{\text{d[mm]}} = pr_{\text{d+1,00UTC[m]}} \times 1000$
+
+where d is the day for which the total precipitation is being computed. This time step should be taken because it contains the accumulated precipitation over the previous 24 hours.
+
+**⚠️Note**: More information on the [conversion for accumulated variables](https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790).
+
+To convert a precipiation flux respectively a precipitation rate, as provided by EURO-CORDEX and DestinE Climate DT, into daily precipitation, we are following these steps:
+
+**1. Unterstand the units:**
+- Precipitation flux is given in kg per square meter per second [kg m-2 s-1].
+- Daily precipitation is required in kg per square meter per day [kg m-2 d-1].
+- Since 1 mm precipitation = 1 kg m-2, daily precipitation in kg m-2 is numerically the same as daily precipitation in mm. 
+
+**2. Convert seconds to a day:** 
+There are 86.400 seconds in a day (24 hours x 60 minutes x 60 seconds).
+
+**3. Perform the conversion:**
+$pr_{\text{d[mm]}} = pr_{\text{flux}} \times 86400$
 
 ## Interpolation of climatological data (Regridding)
 
