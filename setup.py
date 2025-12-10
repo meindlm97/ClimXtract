@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.0.1' 
+VERSION = '1.0.3' 
 DESCRIPTION = 'Climxtract'
 LONG_DESCRIPTION = 'ClimXtract: A Python Toolkit for Standardizing High-Resolution Climate Datasets for Regional Domains'
 
@@ -12,7 +12,7 @@ setup(
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         url = "https://github.com/meindlm97/ClimXtract",
-        install_requires=['numpy', 'xarray', 'wget', 'cdsapi', 'cdo', 'polytope-client', 'lxml', 'conflator', 'rasterio', 'cf-units', 'esgf-pyclient', 'netcdf4', 'cfgrib', 'eccodes'],
+        install_requires=['numpy', 'xarray', 'wget', 'cdsapi', 'cdo', 'polytope-client', 'lxml', 'conflator', 'rasterio', 'cf-units', 'esgf-pyclient', 'netcdf4', 'cfgrib', 'eccodes', 'pystac', 'pystac-client'],
         include_package_data=True,
         keywords=['python', 'climate', 'interpolation', 'geospatial data', 'modeling'],
         classifiers= [
@@ -20,6 +20,6 @@ setup(
             "Programming Language :: Python :: 3",
             "Operating System :: OS Independent",
         ],
-        packages=find_packages(exclude=["example_notebooks"]),
+        packages=find_packages(exclude=["example_notebooks", "example_data", "example_data_processed", "tests"]),
         python_requires=">=3.10",
 )
