@@ -13,6 +13,7 @@ import xarray as xr
 from pyesgf.search import SearchConnection
 from datetime import datetime
 from cdo import Cdo
+from .dictionary import dictionary
 
 
 # Function to find matching URLs
@@ -48,7 +49,16 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
         Output:
             Returns the path of the netCDF file containing the CORDEX data.
     """
-    # Define filename
+    # Validate variable
+    if variable not in dictionary:
+        raise ValueError(f"Variable must be one of {list(dictionary.keys())}")
+
+    eurocordex_info = dictionary[variable]['eurocordex']
+    variable_long = eurocordex_info['name']
+    standard_key = next(iter(dictionary[variable]))
+    standard_unit = dictionary[variable][standard_key]['units']
+
+    # Define output filename
     file = (
         f"{variable}_{model_global}_{experiment}_{ens}_"
         f"{model_regional}_{start}-{end}.nc"
@@ -57,38 +67,37 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
 
     # Check whether the file already exits and return the path of the file
     if os.path.exists(output_file):
-        print("Loaded data successfully.")
+        print("Loaded EURO-CORDEX data successfully.")
         return output_file
 
     else:
-        # Define temporary directory
-        output_path_temp = os.path.join(output_path, "tmp")
+        # Create temporary directory
+        temp_dir = os.path.join(output_path, "tmp")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_file = os.path.join(temp_dir, file)
 
-        # Ensure the temporary directory exists
-        os.makedirs(output_path_temp, exist_ok=True)
-
-        # Define filname for temporal output
-        temp_file = os.path.join(output_path_temp, file)
-
+        # Download EURO-CORDEX data
         try:
-            hostname = "esgf.ceda.ac.uk"
+            hostname = "esgf-data.dkrz.de"
             url = "http://{}/esg-search".format(hostname)
-
             conn = SearchConnection(url, distrib=True)
 
-            request = {
-                "latest": "true",  # Search for the latest data
-                "domain": "EUR-11",
-                "variable": variable,
-                "driving_model": model_global,
-                "rcm_name": model_regional,
-                "time_frequency": "day",
-                "experiment": experiment,
-                "ensemble": ens,
-            }
+            ctx = conn.new_context(
+                project="CORDEX",
+                domain="EUR-11",
+                driving_model=model_global,
+                experiment=experiment,
+                ensemble=ens,
+                rcm_name=model_regional,
+                variable=variable_long,
+                time_frequency="day",
+                latest=True
+            )
 
-            ctx = conn.new_context(facets='project', **request)
-            ds = ctx.search()[0]
+            results = ctx.search()
+            ds = results[0]
+            if not results:
+                raise RuntimeError("No datasets found.")
             files = ds.file_context().search()
 
             # Get list of URLs
@@ -104,16 +113,16 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
             matching_urls = find_matching_urls(url_list, target_start_dt, target_end_dt)
 
             for url in matching_urls:
-                filename = os.path.join(output_path_temp, os.path.basename(url))
+                filename = os.path.join(temp_dir, os.path.basename(url))
                 wget.download(url, filename)
-                print("Downloaded data successfully.")
+                print("Downloaded EURO-CORDEX data successfully.")
 
         except Exception as e:
-            print("Failed to download data.")
-            print(f"\nAn error occured: {e}")
+            print(f"Failed to download EURO-CORDEX data.\nError: {e}")
+            return None
 
         # Use CDO to merge netcdf files
-        daily_files = sorted(glob.glob(os.path.join(output_path_temp, "*.nc")))
+        daily_files = sorted(glob.glob(os.path.join(temp_dir, "*.nc")))
 
         # If cdo is not in the path, add it manually
         conda_bin = os.path.expanduser('~/.conda/envs/climxtract/bin')
@@ -129,20 +138,33 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
             # Perform merging of files on the time dimension
             cdo.mergetime(input=file_list, output=temp_file)
 
+        # Open previously downloaded dataset
         dataset = xr.open_dataset(temp_file)
 
+        # Standardize variable and units for temperature
         if variable == 'tas':
             # Convert from Kelvin to Celsius
             dataset[variable] = dataset[variable] - 273.15
+            units = dataset[variable].attrs.get("units", None)
+            if units is None or units not in standard_unit:
+                print(f"Warning: {variable} has no or wrong unit attribute.")
+                dataset[variable].attrs['units'] = standard_unit
+                print(f"Note: Unit attribute of {variable} changed to {standard_unit}.")
 
+        # Standardize variable and units for precipitation
         if variable == 'pr':
             # Convert kg m-2 s-1 into kg m-2
             dataset[variable] = dataset[variable]*86400
+            units = dataset[variable].attrs.get("units", None)
+            if units is None or units not in standard_unit:
+                print(f"Warning: {variable} has no or wrong unit attribute.")
+                dataset[variable].attrs['units'] = standard_unit
+                print(f"Note: Unit attribute of {variable} changed to {standard_unit}.")
 
-        # Save dataset to a netCDF file
+        # Save dataset to netCDF file
         dataset.to_netcdf(output_file)
 
-        # Remove the temporary directory
-        shutil.rmtree(output_path_temp)
+        # Clean temporary directory
+        shutil.rmtree(temp_dir)
 
         return output_file
