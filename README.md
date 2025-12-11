@@ -67,7 +67,7 @@ exit()
 4. Run a test with sample data: The repository contains example data and scripts in the [test folder](https://github.com/meindlm97/ClimXtract/tree/main/tests). To run the reference test:
 ```
 cd tests
-python reference.py
+python reference_test.py
 ```
 
 ## Introduction
