@@ -242,7 +242,7 @@ where d is the day for which the total precipitation is being computed. This tim
 
 **⚠️Note**: [Daily ERA5-Land data](https://cds.climate.copernicus.eu/datasets/derived-era5-land-daily-statistics?tab=overview) is generally available via the CDS, but only for temperature, not for total precipitation. More information on the [conversion for accumulated variables](https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790).
 
-To convert a precipiation flux respectively a precipitation rate, as provided by EURO-CORDEX and DestinE Climate DT, into daily precipitation, we are following these steps:
+To convert a precipiation flux/rate, as provided by EURO-CORDEX and DestinE Climate DT, into daily precipitation, we are following these steps:
 
 **1. Unterstand the units:**
 - Precipitation flux is given in kg per square meter per second [kg m-2 s-1].
@@ -253,7 +253,7 @@ To convert a precipiation flux respectively a precipitation rate, as provided by
 There are 86.400 seconds in a day (24 hours x 60 minutes x 60 seconds).
 
 **3. Perform the conversion:**
-$pr_{\text{d[mm]}} = pr_{\text{flux}} \times 86400$
+$pr_{\text{d[mm]}} = pr_{\text{flux[kg m-2 s-1]}} \times 86400$
 
 ## Interpolation of climatological data (Regridding)
 
