@@ -188,9 +188,9 @@ The script automatically places your token in ```~/.polytopeapirc``` where the c
 
 ### ERA5
 
-ERA5 is the fifth generation ECMWF reanalysis for the global climate and weather for the past 8 decades. It spans atmospheric, land and ocean variables and includes hourly data with global coverage at 30 km resolution.
+[ERA5](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview) is the fifth generation ECMWF reanalysis for the global climate and weather for the past 8 decades. It spans atmospheric, land and ocean variables and includes hourly data with global coverage at 30 km resolution. It also offers [post-processed daily statistics](https://cds.climate.copernicus.eu/datasets/derived-era5-single-levels-daily-statistics?tab=overview) derived from the hourly fields.
 
-Data is avaiable at the [Copernius Climate Data Store](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview) and can be downloaded via the [CDS API](https://cds.climate.copernicus.eu/how-to-api). In addition, [ERA5-Land](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=overview) hourly data from 1950 to present is also available at a resolution of 9 km. 
+Data is avaiable at the [Copernius Climate Data Store (CDS)](https://cds.climate.copernicus.eu/) and can be downloaded via the [CDS API](https://cds.climate.copernicus.eu/how-to-api). In addition, [ERA5-Land](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=overview) provides hourly data from 1950 to the present at a resolution of 9 km, with [post-processed daily statistics](https://cds.climate.copernicus.eu/datasets/derived-era5-land-daily-statistics?tab=overview) being also available.
 
 In oder to use the CDS API, the CDS API personal access token has to be setup:
 1. If you do not have an account yet, please [register](https://accounts.ecmwf.int/auth/realms/ecmwf/login-actions/registration?execution=c4f93b9c-f4e7-40e7-a6d4-94fb59e7a5e6&client_id=cds&tab_id=KEZjPuIIXiQ).
@@ -240,7 +240,7 @@ $pr_{\text{d[mm]}} = pr_{\text{d+1,00UTC[m]}} \times 1000$
 
 where d is the day for which the total precipitation is being computed. This time step should be taken because it contains the accumulated precipitation over the previous 24 hours.
 
-**⚠️Note**: More information on the [conversion for accumulated variables](https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790).
+**⚠️Note**: [Daily ERA5-Land data](https://cds.climate.copernicus.eu/datasets/derived-era5-land-daily-statistics?tab=overview) is generally available via the CDS, but only for temperature, not for total precipitation. More information on the [conversion for accumulated variables](https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790).
 
 To convert a precipiation flux respectively a precipitation rate, as provided by EURO-CORDEX and DestinE Climate DT, into daily precipitation, we are following these steps:
 
