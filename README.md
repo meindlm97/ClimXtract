@@ -10,7 +10,7 @@ The repository is organized as follows:
 
 - **climxtract** contains the actual source code. ```__init__.py``` is acting as the control center. The individual download functions can be called here, whereby each function returns a tuple containing both the path of the downloaded file (as string) and an xarray object. The regridding function (```regrid.py```) requires the path of the target-grid, as well as the path of the input file to be regridded. The masking function (```mask.py```) requires again the path of the target-grid and the path of the previously regridded file. Note that all functions can also be used independently of each other.
 - **example_data**: Sample datasets for testing.
-- **example_data_processed**: Output data generated from [test script](https://github.com/meindlm97/ClimXtract/blob/main/tests/test.py).
+- **example_data_processed**: Output data generated from [test script](https://github.com/meindlm97/ClimXtract/blob/main/tests/reference_test.py).
 - **example_notebooks** contains example notebooks that illustrate the use of climxtract (for processing temperature and preciptation data). These notebooks can be adapted by the needs of the user, but provide the general procedure for regridding und masking the data as well as some plotting routines to make a first visual comparison between the different datasets.
 - **tests**: Include reference test to validate functionality of the code.
 
