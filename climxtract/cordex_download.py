@@ -76,50 +76,61 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
         os.makedirs(temp_dir, exist_ok=True)
         temp_file = os.path.join(temp_dir, file)
 
+        esgf_nodes = [
+            "esgf-data.dkrz.de",
+            "esg-dn1.nsc.liu.se",
+#            "esgf-node.llnl.gov",
+            "esgf.ceda.ac.uk",
+        ]
+
         # Download EURO-CORDEX data
-        try:
-            hostname = "esgf-data.dkrz.de"
-            url = "http://{}/esg-search".format(hostname)
-            conn = SearchConnection(url, distrib=True)
+        for hostname in esgf_nodes:
+            print(f"\nTrying node: {hostname}")
+            try:
+                url = f"https://{hostname}/esg-search"
+                conn = SearchConnection(url, distrib=True)
 
-            ctx = conn.new_context(
-                project="CORDEX",
-                domain="EUR-11",
-                driving_model=model_global,
-                experiment=experiment,
-                ensemble=ens,
-                rcm_name=model_regional,
-                variable=variable_long,
-                time_frequency="day",
-                latest=True
-            )
+                ctx = conn.new_context(
+                    project="CORDEX",
+                    domain="EUR-11",
+                    driving_model=model_global,
+                    experiment=experiment,
+                    ensemble=ens,
+                    rcm_name=model_regional,
+                    variable=variable_long,
+                    time_frequency="day",
+                    latest=True
+                )
 
-            results = ctx.search()
-            ds = results[0]
-            if not results:
-                raise RuntimeError("No datasets found.")
-            files = ds.file_context().search()
+                results = ctx.search()
 
-            # Get list of URLs
-            url_list = []
-            for f in files:
-                url_list.append(f.download_url)
+                if not results:
+                    print("No datasets found on this node.")
+                    continue
 
-            # Convert target dates to datetime objects
-            target_start_dt = datetime.strptime(start, "%Y%m%d")
-            target_end_dt = datetime.strptime(end, "%Y%m%d")
+                ds = results[0]
+                files = ds.file_context().search()
 
-            # Find matching URLs
-            matching_urls = find_matching_urls(url_list, target_start_dt, target_end_dt)
+                # Get list of URLs
+                url_list = []
+                for f in files:
+                    url_list.append(f.download_url)
 
-            for url in matching_urls:
-                filename = os.path.join(temp_dir, os.path.basename(url))
-                wget.download(url, filename)
-                print("Downloaded EURO-CORDEX data successfully.")
+                # Convert target dates to datetime objects
+                target_start_dt = datetime.strptime(start, "%Y%m%d")
+                target_end_dt = datetime.strptime(end, "%Y%m%d")
 
-        except Exception as e:
-            print(f"Failed to download EURO-CORDEX data.\nError: {e}")
-            return None
+                # Find matching URLs
+                matching_urls = find_matching_urls(url_list, target_start_dt, target_end_dt)
+
+                for url in matching_urls:
+                    filename = os.path.join(temp_dir, os.path.basename(url))
+                    wget.download(url, filename)
+                    print("Downloaded EURO-CORDEX data successfully.")
+
+            except Exception as e:
+                print(f"Failed to download EURO-CORDEX data.\nError: {e}")
+                return None
 
         # Use CDO to merge netcdf files
         daily_files = sorted(glob.glob(os.path.join(temp_dir, "*.nc")))
