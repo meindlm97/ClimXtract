@@ -6,4 +6,4 @@ dependencies:
     - pip
     - pip:
         - matplotlib
-        - climxtract==1.0.2
+        - climxtract==1.0.3
