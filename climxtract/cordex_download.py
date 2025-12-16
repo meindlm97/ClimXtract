@@ -13,7 +13,7 @@ import xarray as xr
 from pyesgf.search import SearchConnection
 from datetime import datetime
 from cdo import Cdo
-from .dictionary import dictionary
+from dictionary import dictionary
 
 
 # Function to find matching URLs
@@ -32,7 +32,7 @@ def find_matching_urls(urls, target_start_dt, target_end_dt):
     return matching_urls
 
 
-def load_cordex(model_global, model_regional, variable, experiment, ens,
+def load_cordex(model_global, model_regional, resolution, variable, experiment, ens,
                 start, end, output_path):
     """
     Download CORDEX data from ESGF using the ESGF Pyclient.
@@ -79,12 +79,15 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
         esgf_nodes = [
             "esgf-data.dkrz.de",
             "esg-dn1.nsc.liu.se",
-#            "esgf-node.llnl.gov",
+            "esgf-node.ipsl.upmc.fr",
             "esgf.ceda.ac.uk",
         ]
 
+        download_successful = False
+
         # Download EURO-CORDEX data
         for hostname in esgf_nodes:
+
             print(f"\nTrying node: {hostname}")
             try:
                 url = f"https://{hostname}/esg-search"
@@ -92,7 +95,7 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
 
                 ctx = conn.new_context(
                     project="CORDEX",
-                    domain="EUR-11",
+                    domain=resolution,
                     driving_model=model_global,
                     experiment=experiment,
                     ensemble=ens,
@@ -126,7 +129,10 @@ def load_cordex(model_global, model_regional, variable, experiment, ens,
                 for url in matching_urls:
                     filename = os.path.join(temp_dir, os.path.basename(url))
                     wget.download(url, filename)
-                    print("Downloaded EURO-CORDEX data successfully.")
+
+                print("Downloaded EURO-CORDEX data successfully.")
+                download_successfull = True
+                break
 
             except Exception as e:
                 print(f"Failed to download EURO-CORDEX data.\nError: {e}")
