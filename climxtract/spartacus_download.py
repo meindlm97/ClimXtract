@@ -140,7 +140,7 @@ def load_spartacus(variable, start, end, output_path):
 
             # Standardize varibale and units for precipitation
             if variable == 'pr':
-                dataset.allname = variable
+                dataset.name = variable
                 units = dataset.attrs.get("units", None)
                 if units is None or units not in standard_unit:
                     dataset.attrs['units'] = standard_unit
