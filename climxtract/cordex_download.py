@@ -13,7 +13,7 @@ import xarray as xr
 from pyesgf.search import SearchConnection
 from datetime import datetime
 from cdo import Cdo
-from dictionary import dictionary
+from .dictionary import dictionary
 
 
 # Function to find matching URLs
