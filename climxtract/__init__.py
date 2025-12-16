@@ -20,7 +20,7 @@ from .regrid import remapdis
 from .mask import masking
 
 
-def load(type, model_global, model_regional, variable, experiment, ens, start, end, output_path):
+def load(type, model_global, model_regional, resolution, variable, experiment, ens, start, end, output_path):
     """
     Function that calls the corresponding load functions, depending on the chosen type.
     Both the path of the file and the xarray object are returned.
@@ -43,7 +43,7 @@ def load(type, model_global, model_regional, variable, experiment, ens, start, e
 
     if type == 'eurocordex':
         # Call the load_cordex function to get the file path
-        file_path_cordex = load_cordex(model_global, model_regional, variable, experiment, ens, start, end, output_path)
+        file_path_cordex = load_cordex(model_global, model_regional, resolution, variable, experiment, ens, start, end, output_path)
 
         # Use xarray to load the dataset from the downloaded netCDF file
         dataset_cordex = xr.open_dataset(file_path_cordex)
@@ -129,3 +129,4 @@ def mask(target_grid, input_grid, output_path_mask):
 
     dataset_mask = xr.open_dataset(mask_path)
     return mask_path, dataset_mask
+
