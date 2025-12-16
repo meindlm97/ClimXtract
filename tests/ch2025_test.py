@@ -25,8 +25,7 @@ output_path_regridded = "/jetfs/home/mmeindl/ClimXtract/tests"
 output_path_masked = "/jetfs/home/mmeindl/ClimXtract/tests"
 
 """
-1. Download example data for CH2025 (statistically downscaled climate scenarios for Switzerland,
-
+1. Download example data for CH2025 (statistically downscaled climate scenarios for Switzerland)
 """
 
 # Download CH2025 data
@@ -34,6 +33,7 @@ t_ch2025 = load(
     type="ch2025",
     model_global = "mpiesm",
     model_regional = "smhi-rca",
+    resolution = None,
     variable = variable,
     experiment = "ref91-20",
     ens = None,
@@ -47,6 +47,7 @@ t_destine = load(
     type="destine",
     model_global = "ICON",
     model_regional = None,
+    resolution = None,
     variable = variable,
     experiment = "SSP3-7.0",
     ens = None,
@@ -60,6 +61,7 @@ t_cordex = load(
     type="eurocordex",
     model_global = "MPI-M-MPI-ESM-LR",
     model_regional = "RCA4",
+    resolution = "EUR-11"
     variable = variable,
     experiment = "rcp45",
     ens = "r1i1p1",
